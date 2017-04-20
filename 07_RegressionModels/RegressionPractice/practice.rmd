@@ -1,0 +1,150 @@
+---
+title: 'Regression Models: Practice'
+author: "Marcio Gualtieri"
+output:
+  html_notebook:
+    css: ./styles/style.css
+    toc: yes
+    toc_depth: 4
+  html_document:
+    css: ./styles/style.css
+    toc: yes
+    toc_depth: 4
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
+---
+
+# Installing the Required Packages
+
+You might need to install the following packages if you don't already have them:
+
+```{r, eval = FALSE}
+install.packages("xtable")
+install.packages("Amelia")
+```
+
+Just uncomment the packages you need and run this chunk before you run the remaining ones in this notebook.
+
+# Importing the Required Packages
+
+Once the libraries are installed, you need to load them as follows:
+
+```{r}
+suppressMessages(library(xtable))   # Pretty printing dataframes
+suppressMessages(library(Amelia))   # Missing data
+suppressMessages(library(graphics))
+```
+
+# Loading the Data-set
+
+```{r}
+company_data <- read.csv('_cf0fd3361e05f5be5304b07b771bad48_companydata.csv',
+                         na.strings=c("NA", "NULL", ""), stringsAsFactors = F)
+```
+
+Let's take a sample:
+
+```{r, results="asis"}
+render_table_in_viewer_pane <- function(data) {
+  html <- print(xtable(data), type = "html", print.results=FALSE)
+  temp <- tempfile(fileext = ".html")
+  cat(html, file = temp)
+  rstudioapi::viewer(temp)
+}
+
+render_table <- function(data) {
+  render_table_in_viewer_pane(data)
+  print(xtable(data), type = "html")
+}
+
+sample_data_frame <- function(data, size) {
+  sample_index <- sample(1:nrow(data), size)
+  return(data[sample_index, ])
+}
+
+render_table(sample_data_frame(company_data, 12))
+```
+
+## Data Types
+
+```{r}
+str(company_data)
+```
+
+## Missing Data
+
+```{r}
+missmap(company_data, main = "Missing Values", col = c("red", "lightgrey"))
+```
+
+The data-set seems complete (no `NA`s or `NULL`s).
+
+# Relationship Between `y` and `x1`
+
+1. [It has been widely noted that there is a relationship between x1 and y.] We are interested in studying the magnitude of this relationship and reporting results to the president of the company.
+
+## Exploratory Data Analysis
+
+```{r}
+pairs(company_data, panel = panel.smooth, main = "Company Data", col = "light blue") 
+``` 
+
+## Fitting a Model for `y` and `x1`
+
+Let's fit a linear model first:
+
+```{r}
+fit <- lm(y ~ x1, data = company_data)
+```
+
+The plot for the fitted model is the following:
+
+```{r}
+plot(company_data$x1, company_data$y,  
+     xlab = "x1", ylab = "y", 
+     bg = "lightblue", 
+     col = "black", cex = 1.1, pch = 21, frame = FALSE)
+abline(fit, lwd = 2)
+```
+
+It seems that there is a linear correlation between the variables `x1` and `y`, but also between the pairs (`x2`, `y`), (`x1`, `x2`) and (`x1`, `x2`). Given that (`x1`, `x2`) seem correlated, without any information about what these variables represent, there's no way to tell if there is a meaningful relationship between (`y`, `x1`). Could actually be a meaninful relationship between (`x2`, `y`) or some other variable not included in the data-set paired with `y`.
+
+
+# Coefficient for `x1`
+
+2. Report the estimated coefficient for x1 from your model to 6 significant digits.
+
+```{r}
+summary(fit)
+```
+
+Specifically, the coefficient of `x1` is:
+
+```{r}
+coefficients(fit)[2]
+```
+
+# Confidence Interval
+
+3. Report the 95% confidence interval for the coefficient for x1 from your model. Use 6 significant digits for both the lower and upper bounds. Report it in the format (Lower Bound, Upper Bound)
+
+```{r}
+coefs <- summary(fit)$coefficients
+
+x1Coefs <- coefs[2, ]
+
+x1Estimate <- x1Coefs[1]
+x1StandardError <- x1Coefs[2]
+
+x1Estimate + c(-1, 1) * qt(.975, df = fit$df) * x1StandardError
+```
+
+# P-Value for `X1`
+
+4. Report the p-value associated with the coefficient for x1 from your model to 6 significant digits. Use scientific notation.
+
+```{r}
+x1Coefs[4]
+```
+
